@@ -75,7 +75,7 @@ class Discriminator(nn.Module):
             nn.LeakyReLU(0.2, inplace=True),
             nn.Linear(512, 256),
             nn.LeakyReLU(0.2, inplace=True),
-            nn.Linear(256, 1), # just one feature output?
+            nn.Linear(256, 1), # just one feature output, prob between 0 and 1. 0 is fake, 1 is real. 
             nn.Sigmoid(), # sigmoid as output. (0,1)
         )
 
@@ -122,7 +122,10 @@ Tensor = torch.cuda.FloatTensor if cuda else torch.FloatTensor
 # ----------
 #  Training
 # ----------
-
+"""
+for each batch, train the generator and then train the discriminator. So they improve together. 
+Discriminator becomes harder to be fooled, generator becomes better at fooling.
+"""
 for epoch in range(opt.n_epochs):
     for i, (imgs, _) in enumerate(dataloader):
 
@@ -149,7 +152,7 @@ for epoch in range(opt.n_epochs):
         g_loss = adversarial_loss(discriminator(gen_imgs), valid)
 
         g_loss.backward()
-        optimizer_G.step()
+        optimizer_G.step() # try to get gen_img closer to valid in discriminator's view. 
 
         # ---------------------
         #  Train Discriminator
@@ -158,8 +161,8 @@ for epoch in range(opt.n_epochs):
         optimizer_D.zero_grad()
 
         # Measure discriminator's ability to classify real from generated samples
-        real_loss = adversarial_loss(discriminator(real_imgs), valid)
-        fake_loss = adversarial_loss(discriminator(gen_imgs.detach()), fake)
+        real_loss = adversarial_loss(discriminator(real_imgs), valid) # classify real as valid
+        fake_loss = adversarial_loss(discriminator(gen_imgs.detach()), fake) # classify gen as fake
         d_loss = (real_loss + fake_loss) / 2
 
         d_loss.backward()
